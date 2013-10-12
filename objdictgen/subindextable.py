@@ -456,9 +456,9 @@ class EditingPanel(wx.SplitterWindow):
         self.SubindexGrid = wx.grid.Grid(id=ID_EDITINGPANELSUBINDEXGRID,
               name='SubindexGrid', parent=self.SubindexGridPanel, pos=wx.Point(0,
               0), size=wx.Size(-1, -1), style=0)
-        self.SubindexGrid.SetFont(wx.Font(12, 77, wx.NORMAL, wx.NORMAL, False,
+        self.SubindexGrid.SetFont(wx.Font(12, wx.SWISS, wx.NORMAL, wx.NORMAL, False,
               'Sans'))
-        self.SubindexGrid.SetLabelFont(wx.Font(10, 77, wx.NORMAL, wx.NORMAL,
+        self.SubindexGrid.SetLabelFont(wx.Font(10, wx.SWISS, wx.NORMAL, wx.NORMAL,
               False, 'Sans'))
         self.SubindexGrid.Bind(wx.grid.EVT_GRID_CELL_CHANGE,
               self.OnSubindexGridCellChange)
