@@ -87,11 +87,11 @@ mrproper: clean
 	rm -f TestMaster.c
 	
 install: TestMasterSlaveLSS
-	mkdir -p $(PREFIX)/bin/
-	cp $< $(PREFIX)/bin/
+	mkdir -p $(DESTDIR)$(PREFIX)/bin/
+	cp $< $(DESTDIR)$(PREFIX)/bin/
 	
 uninstall:
-	rm -f $(PREFIX)/bin/TestMasterSlaveLSS
+	rm -f $(DESTDIR)$(PREFIX)/bin/TestMasterSlaveLSS
 
 
 
