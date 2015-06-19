@@ -91,9 +91,9 @@ def GetValidTypeInfos(typename, items=[]):
 
 def ComputeValue(type, value):
     if type == "visible_string":
-        return "\"%s\""%value, ""
+        return "(UNS8*)\"%s\""%value, ""
     elif type == "domain":
-        return "\"%s\""%''.join(["\\x%2.2x"%ord(char) for char in value]), ""
+        return "(UNS8*)\"%s\""%''.join(["\\x%2.2x"%ord(char) for char in value]), ""
     elif type.startswith("real"):
         return "%f"%value, ""
     else:

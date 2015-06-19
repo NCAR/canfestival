@@ -55,7 +55,7 @@ driver: $(DRIVER)
 libcanfestival_$(CAN_DRIVER).so: $(OBJS)
 	$(CC) -shared -Wl,-soname,libcanfestival_$(CAN_DRIVER).so $(CAN_DLL_CFLAGS) -o $@ $<
 
-install: libcanfestival_$(CAN_DRIVER).so
+install: $(DRIVER)
 	mkdir -p $(DESTDIR)$(PREFIX)/lib/
 	cp $< $(DESTDIR)$(PREFIX)/lib/
 	
@@ -63,6 +63,6 @@ uninstall:
 	rm -f $(TARGET_SOFILES)
 
 clean:
-	rm -f $(OBJS) libcanfestival_$(CAN_DRIVER).so
+	rm -f $(OBJS) $(DRIVER)
 
 mrproper: clean
