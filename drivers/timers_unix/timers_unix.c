@@ -1,12 +1,12 @@
 #include <stdlib.h>
 
 #include <sys/time.h>
-#include <pthread.h> 
+#include <pthread.h>
 #include <signal.h>
 #include <time.h>
 
-#include "applicfg.h"
-#include "timer.h"
+#include <applicfg.h>
+#include <timer.h>
 
 static pthread_mutex_t CanFestival_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -104,6 +104,20 @@ void* unixtimer_canReceiveLoop(void* port)
   	//  if(signal(SIGTERM, canReceiveLoop_signal) == SIG_ERR) {
 	//		perror("signal()");
 	//}
+
+    // Set the cancelation state for immediatly cancel the task
+    int ret;
+
+    ret = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+
+    if (ret != 0)
+        perror("Can't enable the cancelation of the receiving task");
+
+    ret = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+    if (ret != 0)
+        perror("Can't set the asynchronous cancel typ");
+
     unixtimer_ReceiveLoop_task_proc((CAN_PORT)port);
 
     return NULL;
@@ -119,8 +133,8 @@ void CreateReceiveTask(CAN_PORT port, TASK_HANDLE* Thread, void* ReceiveLoopPtr)
 
 void WaitReceiveTaskEnd(TASK_HANDLE *Thread)
 {
-	if(pthread_kill(*Thread, SIGTERM)) {
-		perror("pthread_kill()");
+	if(pthread_cancel(*Thread)) {
+		perror("pthread_cancel()");
 	}
 	if(pthread_join(*Thread, NULL)) {
 		perror("pthread_join()");
