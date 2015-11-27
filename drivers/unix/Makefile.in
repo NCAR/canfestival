@@ -98,6 +98,10 @@ driver: libcanfestival_$(TARGET).a
 #../$(CAN_DRIVER)/$(CAN_DRIVER).o:
 #	$(MAKE) -C ../$(CAN_DRIVER) driver
 
+ifneq ($(ENABLE_DLL_DRIVERS),1)
+OBJS += ../$(CAN_DRIVER)/$(CAN_DRIVER).o
+endif
+
 libcanfestival_$(TARGET).a: $(OBJS)
 	@echo Building [libcanfestival_$(TARGET).a]
 	$(BINUTILS_PREFIX)ar rc $@ $(OBJS)
