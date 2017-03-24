@@ -175,6 +175,7 @@ canOpen_driver (s_BOARD * board)
   int err;
   CAN_HANDLE fd0 = malloc (sizeof (int));
 #ifdef RTCAN_SOCKET
+  nanosecs_rel_t tx_timeout;
   can_baudrate_t *baudrate;
   can_mode_t *mode;
 #endif
@@ -236,6 +237,16 @@ canOpen_driver (s_BOARD * board)
     }
 
 #ifdef RTCAN_SOCKET
+  tx_timeout = 10000000;    /* XXX Timeout is temporarily set to 10 ms */
+  err = CAN_IOCTL (*(int *) fd0, RTCAN_RTIOC_SND_TIMEOUT, &tx_timeout);
+  if (err)
+    {
+      fprintf (stderr,
+          "Setting TX timeout %d failed: %s\n",
+          *baudrate, strerror (CAN_ERRNO (err)));
+      goto error_close;
+    }
+
   baudrate = (can_baudrate_t *) & ifr.ifr_ifru;
   *baudrate = TranslateBaudRate (board->baudrate);
   if (!*baudrate)
