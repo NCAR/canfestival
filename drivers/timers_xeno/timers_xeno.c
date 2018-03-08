@@ -2,12 +2,12 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
-#include <native/task.h>
-#include <native/timer.h>
-#include <native/sem.h>
-#include <native/mutex.h>
-#include <native/cond.h>
-#include <native/alarm.h>
+#include <alchemy/task.h>
+#include <alchemy/timer.h>
+#include <alchemy/sem.h>
+#include <alchemy/mutex.h>
+#include <alchemy/cond.h>
+#include <alchemy/alarm.h>
 
 #include "applicfg.h"
 #include "can_driver.h"
