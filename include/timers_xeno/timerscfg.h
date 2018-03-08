@@ -23,12 +23,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef __TIMERSCFG_H__
 #define __TIMERSCFG_H__
 
-#include <native/task.h>
-#include <native/timer.h>
-#include <native/mutex.h>
-#include <native/cond.h>
-#include <native/sem.h>
-#include <native/alarm.h>
+#include <alchemy/task.h>
+#include <alchemy/timer.h>
+#include <alchemy/mutex.h>
+#include <alchemy/cond.h>
+#include <alchemy/sem.h>
+#include <alchemy/alarm.h>
 
 // Time unit : ns
 // Time resolution : 64bit (~584 years)
