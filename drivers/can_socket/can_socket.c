@@ -29,7 +29,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "config.h"
 
 #ifdef RTCAN_SOCKET
-#include "rtdm/rtcan.h"
+#include "rtdm/can.h"
 #define CAN_IFNAME     "rtcan%s"
 #define CAN_SOCKET     rt_dev_socket
 #define CAN_CLOSE      rt_dev_close
