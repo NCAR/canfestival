@@ -33,7 +33,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /* #define DEBUG_ERR_CONSOLE_ON */
 
 #include <applicfg.h>
-#include "timer.h"
+#include "timers.h"
 
 /*  ---------  The timer table --------- */
 s_timer_entry timers[MAX_NB_TIMER] = {{TIMER_FREE, NULL, NULL, 0, 0, 0},};

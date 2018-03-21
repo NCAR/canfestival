@@ -6,7 +6,7 @@
 #include <time.h>
 
 #include <applicfg.h>
-#include <timer.h>
+#include <timers.h>
 
 static pthread_mutex_t CanFestival_mutex = PTHREAD_MUTEX_INITIALIZER;
 

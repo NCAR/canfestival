@@ -116,7 +116,7 @@
     <ClInclude Include="include\sdo.h" />
     <ClInclude Include="include\states.h" />
     <ClInclude Include="include\sync.h" />
-    <ClInclude Include="include\timer.h" />
+    <ClInclude Include="include\timers.h" />
     <ClInclude Include="include\timers_driver.h" />
     <ClInclude Include="include\win32\applicfg.h" />
     <ClInclude Include="include\win32\canfestival.h" />

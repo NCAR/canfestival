@@ -110,7 +110,7 @@
     <ClInclude Include="include\sync.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\timer.h">
+    <ClInclude Include="include\timers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\timers_driver.h">

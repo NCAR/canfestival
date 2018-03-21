@@ -91,7 +91,7 @@ typedef void (*lss_StoreConfiguration_t)(CO_Data* d,UNS8*,UNS8*);
 
 struct struct_lss_transfer;
 
-//#include "timer.h"
+//#include "timers.h"
 
 #ifdef CO_ENABLE_LSS_FS
 struct struct_lss_fs_transfer {

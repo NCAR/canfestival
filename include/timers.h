@@ -20,8 +20,8 @@ License along with this library; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef __timer_h__
-#define __timer_h__
+#ifndef __timers_h__
+#define __timers_h__
 
 #include <timerscfg.h>
 #include <applicfg.h>
@@ -89,4 +89,4 @@ void setTimer(TIMEVAL value);
  */
 TIMEVAL getElapsedTime(void);
 
-#endif /* #define __timer_h__ */
+#endif /* #define __timers_h__ */

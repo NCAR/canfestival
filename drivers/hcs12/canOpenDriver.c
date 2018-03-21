@@ -35,7 +35,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "../include/hcs12/canOpenDriver.h"
 #include "../include/can.h"
 #include "../include/objdictdef.h"
-#include "../include/timer.h"
+#include "../include/timers.h"
 
 
 

@@ -117,7 +117,7 @@ EXPORT_SYMBOL (sendSYNC);
 EXPORT_SYMBOL (sendSYNCMessage);
 EXPORT_SYMBOL (proceedSYNC);
 
-// timer.h
+// timers.h
 EXPORT_SYMBOL (SetAlarm);
 EXPORT_SYMBOL (DelAlarm);
 EXPORT_SYMBOL (TimeDispatch);

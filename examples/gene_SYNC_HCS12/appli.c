@@ -44,7 +44,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "../include/objacces.h"
 #include "../include/sdo.h"
 #include "../include/pdo.h"
-#include "../include/timer.h"
+#include "../include/timers.h"
 #include "../include/lifegrd.h"
 #include "../include/sync.h"
 

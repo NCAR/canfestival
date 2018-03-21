@@ -36,7 +36,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 struct struct_s_transfer;
 
-#include "timer.h"
+#include "timers.h"
 
 /* Block mode : Data consumer receive step 
  * - set to RXSTEP_STARTED when client receive initiate upload response 

@@ -300,7 +300,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\timer.h"
+				RelativePath=".\include\timers.h"
 				>
 			</File>
 			<File

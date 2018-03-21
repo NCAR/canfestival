@@ -120,7 +120,7 @@ EXPORTS
         EMCY_errorRecovered
         _post_emcy
         
-        ; timer.h
+        ; timers.h
         SetAlarm
         DelAlarm
         TimeDispatch

@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 // Includes for the Canfestival driver
 #include "canfestival.h"
-#include "timer.h"
+#include "timers.h"
 
 // Define the timer registers
 #define TimerAlarm        OCR3B

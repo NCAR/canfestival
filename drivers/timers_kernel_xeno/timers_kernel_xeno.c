@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <asm/current.h>
 
 #include <native/task.h>
-#include <native/timer.h>
+#include <native/timers.h>
 #include <native/sem.h>
 #include <native/mutex.h>
 #include <native/cond.h>
@@ -33,7 +33,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include "applicfg.h"
 #include "can_driver.h"
-#include "timer.h"
+#include "timers.h"
 
 #define TIMERLOOP_TASK_CREATED        1
 

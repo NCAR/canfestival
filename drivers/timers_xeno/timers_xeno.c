@@ -11,7 +11,7 @@
 
 #include "applicfg.h"
 #include "can_driver.h"
-#include "timer.h"
+#include "timers.h"
 
 #define TIMERLOOP_TASK_CREATED        1
 
