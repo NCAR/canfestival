@@ -482,7 +482,7 @@ if [ "$SUB_TIMERS_DRIVER" = "unix" ]; then
 fi
 
 if [ "$SUB_TIMERS_DRIVER" = "xeno" ]; then
-    SUB_EXE_CFLAGS=$SUB_EXE_CFLAGS\ `$XENO_CONFIG --skin=alchemy --skin=rtdm --ldflags`\ -lrtdm
+    SUB_EXE_CFLAGS=$SUB_EXE_CFLAGS\ `$XENO_CONFIG --skin=alchemy --skin=rtdm --ldflags`\ 
 	SUB_PROG_CFLAGS=$SUB_PROG_CFLAGS\ -DUSE_XENO\ `$XENO_CONFIG --skin=alchemy --skin=rtdm --cflags`
     RTCAN_SOCKET=1
 fi
