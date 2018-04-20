@@ -48,15 +48,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define CAN_IFNAME     "can%s"
 #endif
 
-#define CAN_SOCKET     socket
-#define CAN_CLOSE      close
-#define CAN_RECV       recv
-#define CAN_SEND       send
-#define CAN_BIND       bind
-#define CAN_IOCTL      ioctl
-#define CAN_SETSOCKOPT setsockopt
-#define CAN_ERRNO(err) errno
-
 #include "can_driver.h"
 
 /*********functions which permit to communicate with the board****************/
@@ -66,10 +57,10 @@ canReceive_driver (CAN_HANDLE fd0, Message * m)
   int res;
   struct can_frame frame;
 
-  res = CAN_RECV (*(int *) fd0, &frame, sizeof (frame), 0);
+  res = recv (*(int *) fd0, &frame, sizeof (frame), 0);
   if (res < 0)
     {
-      fprintf (stderr, "Recv failed: %s\n", strerror (CAN_ERRNO (res)));
+      fprintf (stderr, "Recv failed: %s\n", strerror (errno));
       return 1;
     }
 
@@ -109,10 +100,10 @@ canSend_driver (CAN_HANDLE fd0, Message const * m)
   MSG("out : ");
   print_message(m);
 #endif
-  res = CAN_SEND (*(int *) fd0, &frame, sizeof (frame), 0);
+  res = send (*(int *) fd0, &frame, sizeof (frame), 0);
   if (res < 0)
     {
-      fprintf (stderr, "Send failed: %s\n", strerror (CAN_ERRNO (res)));
+      fprintf (stderr, "Send failed: %s\n", strerror (errno));
       return 1;
     }
 
@@ -178,11 +169,11 @@ canOpen_driver (s_BOARD * board)
       return NULL;
     }
 
-  *(int *) fd0 = CAN_SOCKET (PF_CAN, SOCK_RAW, CAN_RAW);
+  *(int *) fd0 = socket (PF_CAN, SOCK_RAW, CAN_RAW);
   if (*(int *) fd0 < 0)
     {
       fprintf (stderr, "Socket creation failed: %s\n",
-	       strerror (CAN_ERRNO (*(int *) fd0)));
+	       strerror (errno));
       goto error_ret;
     }
 
@@ -190,20 +181,20 @@ canOpen_driver (s_BOARD * board)
     snprintf (ifr.ifr_name, IFNAMSIZ, CAN_IFNAME, board->busname);
   else
     strncpy (ifr.ifr_name, board->busname, IFNAMSIZ);
-  err = CAN_IOCTL (*(int *) fd0, SIOCGIFINDEX, &ifr);
+  err = ioctl (*(int *) fd0, SIOCGIFINDEX, &ifr);
   if (err)
     {
       fprintf (stderr, "Getting IF index for %s failed: %s\n",
-	       ifr.ifr_name, strerror (CAN_ERRNO (err)));
+	       ifr.ifr_name, strerror (errno));
       goto error_close;
     }
   
   {
     int loopback = 1;
-    err = CAN_SETSOCKOPT(*(int *)fd0, SOL_CAN_RAW, CAN_RAW_LOOPBACK,
+    err = setsockopt(*(int *)fd0, SOL_CAN_RAW, CAN_RAW_LOOPBACK,
                &loopback, sizeof(loopback));
     if (err) {
-        fprintf(stderr, "setsockopt: %s\n", strerror (CAN_ERRNO (err)));
+        fprintf(stderr, "setsockopt: %s\n", strerror (errno));
         goto error_close;
     }
   }
@@ -211,10 +202,10 @@ canOpen_driver (s_BOARD * board)
 #ifndef RTCAN_SOCKET /*CAN_RAW_RECV_OWN_MSGS not supported in rtsocketcan*/
   {
     int recv_own_msgs = 0; /* 0 = disabled (default), 1 = enabled */
-    err = CAN_SETSOCKOPT(*(int *)fd0, SOL_CAN_RAW, CAN_RAW_RECV_OWN_MSGS,
+    err = setsockopt(*(int *)fd0, SOL_CAN_RAW, CAN_RAW_RECV_OWN_MSGS,
                &recv_own_msgs, sizeof(recv_own_msgs));
     if (err) {
-        fprintf(stderr, "setsockopt: %s\n", strerror (CAN_ERRNO (err)));
+        fprintf(stderr, "setsockopt: %s\n", strerror (errno));
         goto error_close;
     }
   }
@@ -222,21 +213,21 @@ canOpen_driver (s_BOARD * board)
   
   addr.can_family = AF_CAN;
   addr.can_ifindex = ifr.ifr_ifindex;
-  err = CAN_BIND (*(int *) fd0, (struct sockaddr *) &addr, sizeof (addr));
+  err = bind (*(int *) fd0, (struct sockaddr *) &addr, sizeof (addr));
   if (err)
     {
-      fprintf (stderr, "Binding failed: %s\n", strerror (CAN_ERRNO (err)));
+      fprintf (stderr, "Binding failed: %s\n", strerror (errno));
       goto error_close;
     }
 
 #ifdef RTCAN_SOCKET
   tx_timeout = 10000000;    /* XXX Timeout is temporarily set to 10 ms */
-  err = CAN_IOCTL (*(int *) fd0, RTCAN_RTIOC_SND_TIMEOUT, &tx_timeout);
+  err = ioctl (*(int *) fd0, RTCAN_RTIOC_SND_TIMEOUT, &tx_timeout);
   if (err)
     {
       fprintf (stderr,
           "Setting TX timeout %d failed: %s\n",
-          *baudrate, strerror (CAN_ERRNO (err)));
+          *baudrate, strerror (errno));
       goto error_close;
     }
 
@@ -245,22 +236,22 @@ canOpen_driver (s_BOARD * board)
   if (!*baudrate)
     goto error_close;
 
-  err = CAN_IOCTL (*(int *) fd0, SIOCSCANBAUDRATE, &ifr);
+  err = ioctl (*(int *) fd0, SIOCSCANBAUDRATE, &ifr);
   if (err)
     {
       fprintf (stderr,
 	       "Setting baudrate %d failed: %s\n",
-	       *baudrate, strerror (CAN_ERRNO (err)));
+	       *baudrate, strerror (errno));
       goto error_close;
     }
 
   mode = (can_mode_t *) & ifr.ifr_ifru;
   *mode = CAN_MODE_START;
-  err = CAN_IOCTL (*(int *) fd0, SIOCSCANMODE, &ifr);
+  err = ioctl (*(int *) fd0, SIOCSCANMODE, &ifr);
   if (err)
     {
       fprintf (stderr, "Starting CAN device failed: %s\n",
-	       strerror (CAN_ERRNO (err)));
+	       strerror (errno));
       goto error_close;
     }
 #endif
@@ -268,7 +259,7 @@ canOpen_driver (s_BOARD * board)
   return fd0;
 
 error_close:
-  CAN_CLOSE (*(int *) fd0);
+  close (*(int *) fd0);
 
 error_ret:
   free (fd0);
@@ -281,7 +272,8 @@ canClose_driver (CAN_HANDLE fd0)
 {
   if (fd0)
     {
-      CAN_CLOSE (*(int *) fd0);
+      shutdown (*(int *) fd0, SHUT_RDWR);
+      close (*(int *) fd0);
       free (fd0);
     }
   return 0;
