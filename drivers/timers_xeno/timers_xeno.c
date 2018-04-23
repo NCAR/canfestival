@@ -64,13 +64,6 @@ void StopTimerLoop(TimerCallback_t exitfunction)
 	rt_cond_signal(&timer_set);
 }
 
-void cleanup_all(void)
-{
-	if (rt_task_join(&timerloop_task) != 0){
-		printf("Failed to join with Timerloop task\n");
-	}
-	rt_task_delete(&timerloop_task);
-}
 
 /**
  * Clean all Semaphores, mutex, condition variable and main task
@@ -81,6 +74,7 @@ void TimerCleanup(void)
 	rt_mutex_delete(&condition_mutex);
 	rt_cond_delete(&timer_set);
 	rt_sem_delete(&control_task);
+	rt_task_unblock(&timerloop_task);
 	if (rt_task_join(&timerloop_task) != 0){
 		printf("Failed to join with Timerloop task\n");
 	}
@@ -187,7 +181,7 @@ void StartTimerLoop(TimerCallback_t _init_callback)
 	return;
 	
 error:
-	cleanup_all();
+	rt_task_delete(&timerloop_task);
 }
 
 /**
@@ -225,6 +219,7 @@ void CreateReceiveTask(CAN_PORT fd0, TASK_HANDLE *ReceiveLoop_task, void* Receiv
  */
 void WaitReceiveTaskEnd(TASK_HANDLE *ReceiveLoop_task)
 {
+	rt_task_unblock(ReceiveLoop_task);
 	if (rt_task_join(ReceiveLoop_task) != 0){
 		printf("Failed to join with Receive task\n");
 	}

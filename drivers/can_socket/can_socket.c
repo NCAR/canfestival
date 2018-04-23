@@ -58,7 +58,7 @@ canReceive_driver (CAN_HANDLE fd0, Message * m)
   struct can_frame frame;
 
   res = recv (*(int *) fd0, &frame, sizeof (frame), 0);
-  if (res < 0)
+  if (res <= 0)
     {
       fprintf (stderr, "Recv failed: %s\n", strerror (errno));
       return 1;
@@ -101,7 +101,7 @@ canSend_driver (CAN_HANDLE fd0, Message const * m)
   print_message(m);
 #endif
   res = send (*(int *) fd0, &frame, sizeof (frame), 0);
-  if (res < 0)
+  if (res <= 0)
     {
       fprintf (stderr, "Send failed: %s\n", strerror (errno));
       return 1;
