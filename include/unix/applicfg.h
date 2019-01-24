@@ -78,10 +78,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /* -------------------------------------- */
 #ifdef __KERNEL__
 #	define MSG(...) printk (__VA_ARGS__)
-//#elif defined USE_RTAI
-//#	define MSG(...) rt_printk (__VA_ARGS__)
-#elif defined USE_XENO
-#	define MSG(...)
 #else
 #	include <stdio.h>
 #	define MSG(...) printf (__VA_ARGS__)

@@ -54,16 +54,33 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 UNS8
 canReceive_driver (CAN_HANDLE fd0, Message * m)
 {
-  int res;
+  int res = 0;
   struct can_frame frame;
 
-  res = recv (*(int *) fd0, &frame, sizeof (frame), 0);
-  if (res <= 0)
+  while (res <= 0) {
+    res = recv (*(int *) fd0, &frame, sizeof (frame), 0);
+    if (res < 0)
     {
-      fprintf (stderr, "Recv failed: %s\n", strerror (errno));
-      return 1;
+        if (errno == EBADF)
+        {
+            /* this will exit recieve loop */
+            return 1;
+        }
+        else if (errno == EINTR) continue; /* retry immediatly */
+        else
+        {
+            /* print error and retry after 20ms, arbitrary */
+            fprintf (stderr, "Recv failed: %s\n", strerror (errno));
+            usleep(20000);
+            continue;
+        }
     }
-
+    else if (res == 0)
+    {
+        /* this will exit recieve loop */
+        return 1;
+    }
+  } 
   m->cob_id = frame.can_id & CAN_EFF_MASK;
   m->len = frame.can_dlc;
   if (frame.can_id & CAN_RTR_FLAG)

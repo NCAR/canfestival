@@ -1,253 +1,282 @@
 #include <stdlib.h>
+
 #include <unistd.h>
-#include <sys/mman.h>
+#include <stdint.h>
+#include <sys/time.h>
+#include <pthread.h>
+#include <signal.h>
+#include <sys/timerfd.h>
+#include <time.h>
 
-#include <alchemy/task.h>
-#include <alchemy/timer.h>
-#include <alchemy/sem.h>
-#include <alchemy/mutex.h>
-#include <alchemy/cond.h>
-#include <alchemy/alarm.h>
+#include <applicfg.h>
+#include <timers.h>
 
-#include "applicfg.h"
-#include "can_driver.h"
-#include "timers.h"
+static pthread_mutex_t CanFestival_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-#define TIMERLOOP_TASK_CREATED        1
+static pthread_mutex_t timer_mutex = PTHREAD_MUTEX_INITIALIZER;
+int tfd;
+static int timer_created = 0;
+struct timespec last_occured_alarm;
+struct timespec next_alarm;
+struct timespec time_ref;
 
-TimerCallback_t exitall;
-
-RT_MUTEX condition_mutex;
-RT_SEM CanFestival_mutex;
-RT_SEM control_task; 
-RT_COND timer_set;	
-RT_TASK timerloop_task;
- 
-RTIME last_time_read;
-RTIME last_occured_alarm;
-RTIME last_timeout_set;
-
+static pthread_t timer_thread; 
 int stop_timer = 0;
 
-/**
- * Init Mutex, Semaphores and Condition variable
- */
-void TimerInit(void)
+/* Subtract the struct timespec values X and Y,
+   storing the result in RESULT.
+   Return 1 if the difference is negative, otherwise 0. */
+int
+timespec_subtract (struct timespec *result, struct timespec *x, struct timespec *y)
 {
-  	int ret = 0;
-  	char taskname[32];
+  /* Perform the carry for the later subtraction by updating y. */
+  if (x->tv_nsec < y->tv_nsec) {
+    int seconds = (y->tv_nsec - x->tv_nsec) / 1000000000L + 1;
+    y->tv_nsec -= 1000000000L * seconds;
+    y->tv_sec += seconds;
+  }
+  if (x->tv_nsec - y->tv_nsec > 1000000000L) {
+    int seconds = (x->tv_nsec - y->tv_nsec) / 1000000000L;
+    y->tv_nsec += 1000000000L * seconds;
+    y->tv_sec -= seconds;
+  }
 
-	// lock process in to RAM
-  	mlockall(MCL_CURRENT | MCL_FUTURE);
+  /* Compute the time remaining to wait.
+     tv_nsec is certainly positive. */
+  result->tv_sec = x->tv_sec - y->tv_sec;
+  result->tv_nsec = x->tv_nsec - y->tv_nsec;
 
-  	snprintf(taskname, sizeof(taskname), "S1-%d", getpid());
-	rt_sem_create(&CanFestival_mutex, taskname, 1, S_FIFO);
-
-  	snprintf(taskname, sizeof(taskname), "S2-%d", getpid());
-  	rt_sem_create(&control_task, taskname, 0, S_FIFO);
-  	  	
-  	snprintf(taskname, sizeof(taskname), "M1-%d", getpid());
-  	rt_mutex_create(&condition_mutex, taskname);
-  	
-  	snprintf(taskname, sizeof(taskname), "C1-%d", getpid());
-  	rt_cond_create(&timer_set, taskname);
+  /* Return 1 if result is negative. */
+  return x->tv_sec < y->tv_sec;
 }
 
-/**
- * Stop Timer Task
- * @param exitfunction
- */
-void StopTimerLoop(TimerCallback_t exitfunction)
+void timespec_add (struct timespec *result, struct timespec *x, struct timespec *y)
 {
-	exitall = exitfunction;
-	stop_timer = 1;
-	rt_cond_signal(&timer_set);
+  result->tv_sec = x->tv_sec + y->tv_sec;
+  result->tv_nsec = x->tv_nsec + y->tv_nsec;
+
+  while (result->tv_nsec > 1000000000L) {
+      result->tv_sec ++;
+      result->tv_nsec -= 1000000000L;
+  }
 }
 
-
-/**
- * Clean all Semaphores, mutex, condition variable and main task
- */
 void TimerCleanup(void)
 {
-	rt_sem_delete(&CanFestival_mutex);
-	rt_mutex_delete(&condition_mutex);
-	rt_cond_delete(&timer_set);
-	rt_sem_delete(&control_task);
-	rt_task_unblock(&timerloop_task);
-	if (rt_task_join(&timerloop_task) != 0){
-		printf("Failed to join with Timerloop task\n");
-	}
-	rt_task_delete(&timerloop_task);
 }
 
-/**
- * Take a semaphore
- */
+void EnterTimerMutex(void)
+{
+	if(pthread_mutex_lock(&timer_mutex)) {
+		perror("pthread_mutex_lock(timer_mutex) failed\n");
+	}
+}
+
+void LeaveTimerMutex(void)
+{
+	if(pthread_mutex_unlock(&timer_mutex)) {
+		perror("pthread_mutex_unlock(timer_mutex) failed\n");
+	}
+}
+
 void EnterMutex(void)
 {
-	rt_sem_p(&CanFestival_mutex, TM_INFINITE);
+	if(pthread_mutex_lock(&CanFestival_mutex)) {
+		perror("pthread_mutex_lock(CanFestival_mutex) failed\n");
+	}
 }
 
-/**
- * Signaling a semaphore
- */
 void LeaveMutex(void)
 {
-	rt_sem_v(&CanFestival_mutex);
-}
-
-static TimerCallback_t init_callback;
-
-/**
- * Timer Task
- */
-void timerloop_task_proc(void *arg)
-{
-	int ret = 0;
-
-	getElapsedTime();
-	last_timeout_set = 0;
-	last_occured_alarm = last_time_read;
-	
-	/* trigger first alarm */
-	SetAlarm(NULL, 0, init_callback, 0, 0);
-	RTIME current_time;
-	RTIME real_alarm;
-	do{
-		
-		rt_mutex_acquire(&condition_mutex, TM_INFINITE);
-		if(last_timeout_set == TIMEVAL_MAX)
-		{
-			ret = rt_cond_wait(
-				&timer_set,
-				&condition_mutex,
-				TM_INFINITE
-				);		/* Then sleep until next message*/
-			rt_mutex_release(&condition_mutex);
-		}else{
-			current_time = rt_timer_read();
-			real_alarm = last_time_read + last_timeout_set;
-			ret = rt_cond_wait( /* sleep until next deadline */
-				&timer_set,
-				&condition_mutex,
-				(real_alarm - current_time)); /* else alarm consider expired */   
-			if(ret == -ETIMEDOUT){
-				last_occured_alarm = real_alarm;
-				rt_mutex_release(&condition_mutex);
-				EnterMutex();
-				TimeDispatch();
-				LeaveMutex();
-			}else{ 
-				rt_mutex_release(&condition_mutex);
-			}
-		}
-	}while ((ret == 0 || ret == -EINTR || ret == -ETIMEDOUT) && !stop_timer);
-	
-	if(exitall){
-		EnterMutex();
-		exitall(NULL,0);
-		LeaveMutex();
+	if(pthread_mutex_unlock(&CanFestival_mutex)) {
+		perror("pthread_mutex_unlock(CanFestival_mutex) failed\n");
 	}
 }
 
-/**
- * Create the Timer Task
- * @param _init_callback
- */
-void StartTimerLoop(TimerCallback_t _init_callback)
+void TimerInit(void)
 {
-	int ret = 0;
+    /* Initialize absolute time references */
+    if(clock_gettime(CLOCK_MONOTONIC, &time_ref)){
+        perror("clock_gettime(time_ref)");
+    }
+    next_alarm = last_occured_alarm = time_ref;
+}
+
+void StopTimerLoop(TimerCallback_t exitfunction)
+{
+
+	stop_timer = 1;
+
+    pthread_cancel(timer_thread);
+    pthread_join(timer_thread, NULL);
+
+	EnterMutex();
+	exitfunction(NULL,0);
+	LeaveMutex();
+}
+
+void* xenomai_timerLoop(void* unused)
+{
+    struct sched_param param = { .sched_priority = 80 };
+    int ret;
+
+    if (ret = pthread_setname_np(pthread_self(), "canfestival_timer")) {
+        fprintf(stderr, "pthread_setname_np(): %s\n",
+                strerror(-ret));
+        goto exit_timerLoop;
+    }
+    
+    if (ret = pthread_setschedparam(pthread_self(), SCHED_FIFO, &param)) {
+        fprintf(stderr, "pthread_setschedparam(): %s\n",
+                strerror(-ret));
+        goto exit_timerLoop;
+    }
+
+    EnterTimerMutex();
+
+    tfd = timerfd_create(CLOCK_MONOTONIC, 0);
+    if(tfd == -1) {
+		perror("timer_create() failed\n");
+        goto exit_timerLoop_timermutex;
+    }
+    timer_created = 1;
+
+    while (!stop_timer)
+    {
+        uint64_t ticks;
+
+        LeaveTimerMutex();
+
+        EnterMutex();
+        TimeDispatch();
+        LeaveMutex();
+
+        /*  wait next timer occurence */
+
+        ret = read(tfd, &ticks, sizeof(ticks));
+        if (ret < 0) {
+            perror("timerfd read()\n");
+            break;
+        }
+
+        EnterTimerMutex();
+
+        last_occured_alarm = next_alarm;
+    }
+
+    close(tfd);
+
+    timer_created = 0;
+
+exit_timerLoop_timermutex:
+    LeaveTimerMutex();
+
+exit_timerLoop:
+    return NULL;
+}
+
+
+void StartTimerLoop(TimerCallback_t init_callback)
+{
+    int ret;
+
 	stop_timer = 0;	
-	init_callback = _init_callback;
-	
-	char taskname[32];
-	snprintf(taskname, sizeof(taskname), "timerloop-%d", getpid());
 
-	/* create timerloop_task */
-	ret = rt_task_create(&timerloop_task, taskname, 0, 50, T_JOINABLE);
-	if (ret) {
-		printf("Failed to create timerloop_task, code %d\n",errno);
-		return;
-	}
- 	
-	/* start timerloop_task */
-	ret = rt_task_start(&timerloop_task,&timerloop_task_proc,NULL);
-	if (ret) {
-		printf("Failed to start timerloop_task, code %u\n",errno);
-		goto error;
-	}
-	
-	return;
-	
-error:
-	rt_task_delete(&timerloop_task);
+	EnterMutex();
+	// At first, TimeDispatch will call init_callback.
+	SetAlarm(NULL, 0, init_callback, 0, 0);
+	LeaveMutex();
+
+    ret = pthread_create(&timer_thread, NULL, &xenomai_timerLoop, NULL);
+    if (ret) {
+        fprintf(stderr, "StartTimerLoop pthread_create(): %s\n",
+                strerror(-ret));
+    }
 }
 
-/**
- * Create the CAN Receiver Task
- * @param fd0 CAN port
- * @param *ReceiveLoop_task CAN receiver task
- * @param *ReceiveLoop_task_proc CAN receiver function
- */
-void CreateReceiveTask(CAN_PORT fd0, TASK_HANDLE *ReceiveLoop_task, void* ReceiveLoop_task_proc)
-{	
-	int ret;
-	static int id = 0;
-	char taskname[32];
-	snprintf(taskname, sizeof(taskname), "canloop%d-%d", id, getpid());
-	id++;
+static void (*unixtimer_ReceiveLoop_task_proc)(CAN_PORT) = NULL;
 
-	/* create ReceiveLoop_task */
-	ret = rt_task_create(ReceiveLoop_task,taskname,0,50,T_JOINABLE);
-	if (ret) {
-		printf("Failed to create ReceiveLoop_task number %d, code %d\n", id, errno);
-		return;
-	}
-	/* start ReceiveLoop_task */
-	ret = rt_task_start(ReceiveLoop_task, ReceiveLoop_task_proc,(void*)fd0);
-	if (ret) {
-		printf("Failed to start ReceiveLoop_task number %d, code %d\n", id, errno);
-		return;
-	}
-	rt_sem_v(&control_task);
-}
-
-/**
- * Wait for the CAN Receiver Task end
- * @param *ReceiveLoop_task CAN receiver thread
- */
-void WaitReceiveTaskEnd(TASK_HANDLE *ReceiveLoop_task)
+void* xenomai_canReceiveLoop(void* port)
 {
-	rt_task_unblock(ReceiveLoop_task);
-	if (rt_task_join(ReceiveLoop_task) != 0){
-		printf("Failed to join with Receive task\n");
-	}
-	rt_task_delete(ReceiveLoop_task);
+    int ret;
+    struct sched_param param = { .sched_priority = 82 };
+    pthread_setname_np(pthread_self(), "canReceiveLoop");
+    pthread_setschedparam(pthread_self(), SCHED_FIFO, &param);
+
+    unixtimer_ReceiveLoop_task_proc((CAN_PORT)port);
+
+    return NULL;
 }
 
-/**
- * Set timer for the next wakeup
- * @param value
- */
+void CreateReceiveTask(CAN_PORT port, TASK_HANDLE* Thread, void* ReceiveLoopPtr)
+{
+    unixtimer_ReceiveLoop_task_proc = ReceiveLoopPtr;
+
+	if(pthread_create(Thread, NULL, xenomai_canReceiveLoop, (void*)port)) {
+		perror("CreateReceiveTask pthread_create()");
+	}
+}
+
+void WaitReceiveTaskEnd(TASK_HANDLE *Thread)
+{
+	if(pthread_cancel(*Thread)) {
+		perror("pthread_cancel()");
+	}
+	if(pthread_join(*Thread, NULL)) {
+		perror("pthread_join()");
+	}
+}
+
+#define maxval(a,b) ((a>b)?a:b)
 void setTimer(TIMEVAL value)
 {
-	rt_mutex_acquire(&condition_mutex, TM_INFINITE);
-	last_timeout_set = value;
-	rt_mutex_release(&condition_mutex);
-	rt_cond_signal(&timer_set);
+    struct itimerspec timerValues;
+
+    EnterTimerMutex();
+
+    if(timer_created){
+        long tv_nsec = (maxval(value,1)%1000000000LL);
+        time_t tv_sec = value/1000000000LL;
+        timerValues.it_value.tv_sec = tv_sec;
+        timerValues.it_value.tv_nsec = tv_nsec;
+        timerValues.it_interval.tv_sec = 0;
+        timerValues.it_interval.tv_nsec = 0;
+
+        /* keep track of when should alarm occur*/
+        timespec_add(&next_alarm, &time_ref, &timerValues.it_value);
+        timerfd_settime (tfd, 0, &timerValues, NULL);
+    }
+
+    LeaveTimerMutex();
 }
 
-/**
- * Get the elapsed time since the last alarm
- * @return a time in nanoseconds
- */
+
 TIMEVAL getElapsedTime(void)
 {
-	RTIME res;
-	rt_mutex_acquire(&condition_mutex, TM_INFINITE);
-	last_time_read = rt_timer_read();
-	res = last_time_read - last_occured_alarm;
-	rt_mutex_release(&condition_mutex);
+    struct itimerspec outTimerValues;
+    struct timespec ts;
+    struct timespec last_occured_alarm_copy;
+
+    TIMEVAL res = 0;
+
+    EnterTimerMutex();
+
+    if(timer_created){
+        if(clock_gettime(CLOCK_MONOTONIC, &time_ref)){
+            perror("clock_gettime(ts)");
+
+        }
+        /* timespec_substract modifies second operand */
+        last_occured_alarm_copy = last_occured_alarm;
+
+        timespec_subtract(&ts, &time_ref, &last_occured_alarm_copy);
+
+        /* TIMEVAL is nano seconds */
+        res = (ts.tv_sec * 1000000000L) + ts.tv_nsec;
+    }
+
+    LeaveTimerMutex();
+
 	return res;
 }
+

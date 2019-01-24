@@ -23,20 +23,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef __TIMERSCFG_H__
 #define __TIMERSCFG_H__
 
-#include <alchemy/task.h>
-#include <alchemy/timer.h>
-#include <alchemy/mutex.h>
-#include <alchemy/cond.h>
-#include <alchemy/sem.h>
-#include <alchemy/alarm.h>
+#include <pthread.h>
 
 // Time unit : ns
 // Time resolution : 64bit (~584 years)
-#define TIMEVAL RTIME
-#define TIMEVAL_MAX ~(RTIME)0
-#define MS_TO_TIMEVAL(ms)  rt_timer_ns2ticks((RTIME)ms*1000000)
-#define US_TO_TIMEVAL(us)  rt_timer_ns2ticks((RTIME)us*1000)
+#define TIMEVAL unsigned long long
+#define TIMEVAL_MAX ~(TIMEVAL)0
+#define MS_TO_TIMEVAL(ms) ms*1000000LL
+#define US_TO_TIMEVAL(us) us*1000LL
 
-#define TASK_HANDLE RT_TASK
+#define TASK_HANDLE pthread_t
 
 #endif
