@@ -26,6 +26,19 @@ TIMERS = SUB_TIMERS_DRIVER
 WX = SUB_WX
 ENABLE_LSS = SUB_ENABLE_LSS
 
+# If Python version is not 2, don't bother trying to build since
+# building examples requires objdictgen, and it in turn requires Python 2
+ifneq ($(python_major_version), 2)
+
+define build_command_seq
+	$(info **************************************************************)
+	$(info *** Not building examples because Python is not version 2! ***)
+	$(info **************************************************************)
+endef
+
+else # for Python 2
+
+
 ifeq ($(TARGET),win32)
 	BLD_TEST=1
 endif
@@ -69,6 +82,9 @@ define build_command_seq
 	$(MAKE) -C kerneltest $@
 endef
 endif
+
+endif # ifneq ($(python_major_version), 2)
+
 
 
 all:

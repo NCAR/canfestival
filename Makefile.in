@@ -21,7 +21,10 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 # 
 
-all: objdictedit canfestival examples
+# Get the default Python major version and export it to all submakes
+export python_major_version := $(word 2, $(subst ., ,$(shell python --version 2>&1)))
+
+all: objdictgen canfestival examples
 
 examples: canfestival driver
 	$(MAKE) -C examples all
@@ -32,7 +35,7 @@ documentation:
 manual:
 	$(MAKE) -C doc/manual
 
-objdictedit:
+objdictgen:
 	$(MAKE) -C objdictgen all
 
 canfestival: driver

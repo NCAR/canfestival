@@ -23,6 +23,19 @@
 
 PREFIX = SUB_PREFIX
 
+# Install the real Python binaries only if we have Python 2. Otherwise,
+# install shell scripts which just print a warning and exit with an error
+# return value
+ifeq ($(python_major_version), 2)
+    # install the real Python binaries only if we have Python 2
+	OBJDICTEDIT = 'objdictedit.py'
+	OBJDICTGEN = 'objdictgen.py'
+else
+	# install warning scripts if we don't have Python 2
+	OBJDICTEDIT = 'objdictedit_warn.sh'
+	OBJDICTGEN = 'objdictgen_warn.sh'
+endif
+
 all: gnosis
 
 gnosis: gnosis/version.py
@@ -35,14 +48,17 @@ gnosis/version.py:
 	rm -rf gnosis_extract
 
 install: gnosis
+	# Add an objdictgen directory in the install location and copy needed
+	# files from this directory to there
 	mkdir -p $(DESTDIR)$(PREFIX)/objdictgen
-	cp -r *.py* config doc doc_index locale examples gnosis *.ico $(DESTDIR)$(PREFIX)/objdictgen
+	cp -r *.py* objdict*.sh config doc doc_index locale examples gnosis *.ico $(DESTDIR)$(PREFIX)/objdictgen
 	chmod -R a+r $(DESTDIR)$(PREFIX)/objdictgen
+	# Add objdictedit and objdictgen shortcuts in the install bin directory
 	mkdir -p $(DESTDIR)$(PREFIX)/bin
-	ln -sf $(DESTDIR)$(PREFIX)/objdictgen/objdictedit.py $(DESTDIR)$(PREFIX)/bin/objdictedit
-	chmod 755 $(DESTDIR)$(PREFIX)/objdictgen/objdictedit.py
-	ln -sf $(DESTDIR)$(PREFIX)/objdictgen/objdictgen.py $(DESTDIR)$(PREFIX)/bin/objdictgen
-	chmod 755 $(DESTDIR)$(PREFIX)/objdictgen/objdictgen.py
+	ln -sf $(DESTDIR)$(PREFIX)/objdictgen/$(OBJDICTEDIT) $(DESTDIR)$(PREFIX)/bin/objdictedit
+	chmod +x $(DESTDIR)$(PREFIX)/objdictgen/$(OBJDICTEDIT)
+	ln -sf $(DESTDIR)$(PREFIX)/objdictgen/$(OBJDICTGEN) $(DESTDIR)$(PREFIX)/bin/objdictgen
+	chmod +x $(DESTDIR)$(PREFIX)/objdictgen/$(OBJDICTGEN)
 
 uninstall:
 	rm -rf $(DESTDIR)$(PREFIX)/objdictgen
