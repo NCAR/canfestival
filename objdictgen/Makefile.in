@@ -22,6 +22,7 @@
 # 
 
 PREFIX = SUB_PREFIX
+INSTDIR = $(DESTDIR)$(PREFIX)
 
 # Install the real Python binaries only if we have Python 2. Otherwise,
 # install shell scripts which just print a warning and exit with an error
@@ -50,20 +51,20 @@ gnosis/version.py:
 install: gnosis
 	# Add an objdictgen directory in the install location and copy needed
 	# files from this directory to there
-	mkdir -p $(DESTDIR)$(PREFIX)/objdictgen
-	cp -r *.py* objdict*.sh config doc doc_index locale examples gnosis *.ico $(DESTDIR)$(PREFIX)/objdictgen
-	chmod -R a+r $(DESTDIR)$(PREFIX)/objdictgen
+	mkdir -p $(INSTDIR)/canfestival
+	cp -r *.py* objdict*.sh config doc doc_index locale examples gnosis *.ico $(INSTDIR)/canfestival
+	chmod -R a+r $(INSTDIR)/canfestival
 	# Add objdictedit and objdictgen shortcuts in the install bin directory
-	mkdir -p $(DESTDIR)$(PREFIX)/bin
-	ln -sf $(DESTDIR)$(PREFIX)/objdictgen/$(OBJDICTEDIT) $(DESTDIR)$(PREFIX)/bin/objdictedit
-	chmod +x $(DESTDIR)$(PREFIX)/objdictgen/$(OBJDICTEDIT)
-	ln -sf $(DESTDIR)$(PREFIX)/objdictgen/$(OBJDICTGEN) $(DESTDIR)$(PREFIX)/bin/objdictgen
-	chmod +x $(DESTDIR)$(PREFIX)/objdictgen/$(OBJDICTGEN)
+	mkdir -p $(INSTDIR)/bin
+	ln -sf $(INSTDIR)/canfestival/$(OBJDICTEDIT) $(INSTDIR)/bin/objdictedit
+	chmod +x $(INSTDIR)/canfestival/$(OBJDICTEDIT)
+	ln -sf $(INSTDIR)/canfestival/$(OBJDICTGEN) $(INSTDIR)/bin/objdictgen
+	chmod +x $(INSTDIR)/canfestival/$(OBJDICTGEN)
 
 uninstall:
-	rm -rf $(DESTDIR)$(PREFIX)/objdictgen
-	rm -f $(DESTDIR)$(PREFIX)/bin/objdictedit
-	rm -f $(DESTDIR)$(PREFIX)/bin/objdictgen
+	rm -rf $(INSTDIR)/canfestival
+	rm -f $(INSTDIR)/bin/objdictedit
+	rm -f $(INSTDIR)/bin/objdictgen
 
 clean:
 
