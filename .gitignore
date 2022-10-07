@@ -1,0 +1,12 @@
+Makefile
+*.a
+*.o
+*.so
+
+include/config.h
+objdictgen/canfestival_config.py
+objdictgen/gnosis
+
+# Ignore the links created for objdictedit and objdictgen
+objdictgen/objdictedit
+objdictgen/objdictgen
