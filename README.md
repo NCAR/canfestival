@@ -2,6 +2,12 @@
 
 ###### This repository was forked from (stagnant) Mercurial repo https://hg.beremiz.org/canfestival @ changeset de1fc3261f21
 
+## Introduction
+
+CanFestival-3 provides tools to support the CANopen CAN bus protocol. These include a C implementation
+library/headers and (if Python 2 is available) the `objdictedit` and `obdictgen` tools for editing object
+dictionaries and generate C source files from object dictionary files.
+
 ## Why this fork?
 I have been using CanFestival to successfully support another project for some time. After a recent system upgrade to
 an operating system which no longer provides Python 2, I discovered that CanFestival's `objdictedit` and `objdictgen`
